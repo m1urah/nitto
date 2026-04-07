@@ -1,3 +1,5 @@
+"""Input/Output helper functions."""
+
 import sys
 from pathlib import Path
 

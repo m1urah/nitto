@@ -1,6 +1,8 @@
+"""Transforms payload bytes into obfuscated lists of IP, MAC, UUID, or email string representations."""
 
+import os
 from enum import Enum
-from typing import Callable, Final, Literal, TypeAlias, cast, get_args
+from typing import Callable, Literal, TypeAlias, cast, get_args
 
 from utils.customLogger import LOGGER
 from transformations.common import pad_buffer
@@ -9,23 +11,26 @@ from transformations.common import pad_buffer
 # =======  Definitions  ===================================================== #
 
 class ElementSize(Enum): # In bytes
-    IPV4 = 4
-    IPV6 = 16
-    UUID = 16
-    EMAIL = 0
-    MAC = 6
+    IPV4  = 4
+    IPV6  = 16
+    UUID  = 16
+    EMAIL = 6
+    MAC   = 6
 
 IPMode : TypeAlias = Literal["ipv4", "ipv6"]
 IP_MODES = list(get_args(IPMode))
 
-MACMode : TypeAlias = Literal["unix", "win", "net", "none"]
+MACMode : TypeAlias = Literal["unix", "win", "net", "raw"]
 MAC_MODES = list(get_args(MACMode))
 
 UUIDMode : TypeAlias = Literal["std", "win"]
 UUID_MODES = list(get_args(UUIDMode))
 
-EmailMode : TypeAlias = Literal["temp", "temp2"]
+EmailMode : TypeAlias = Literal["std"]
 EMAIL_MODES = list(get_args(EmailMode))
+
+FIRST_NAMES_PATH = f"{os.path.dirname(__file__)}/../../helpers/wordLists/firstNames.gperf"
+LAST_NAMES_PATH = f"{os.path.dirname(__file__)}/../../helpers/wordLists/lastNames.gperf"
 
 # =======  Transformation  ================================================== #
 
@@ -65,9 +70,75 @@ _TRANSFORMS = {
 
 # =======  Email  =========================================================== #
 
-def obfuscate_email(mode: int, buf: bytes) -> list[str]:
-    return []
+DOMAINS = [ # 32 options
+    "gmail", "yahoo", "outlook", "hotmail", "live", "icloud", "mail",
+    "protonmail", "zoho", "yandex", "aol", "msn", "gmx", "web", "qq",
+    "mailru",  "naver", "rediffmail", "comcast", "orange", "t-online",
+    "btinternet",  "verizon", "att", "rogers", "sky", "virginmedia",
+    "charter",  "cox", "freenet", "rambler", "libero"
+]
+TLDS = [    # 32 options
+    "com", "net", "org", "edu", "xyz", "info", "io", "me", "co", 
+    "biz", "es", "de", "uk", "fr", "ca", "au", "jp", "cn", "br",
+    "it", "nl", "ru", "in", "mx", "pl", "be", "se", "at", "eu",
+    "ai", "cloud", "online"
+]
+MIDDLE = [  # 32 options
+    "a","b","c","d","e","f","g","h","i","j","k","l","m",
+    "n","o","p","q","r","s","t","u","v","w","x","y","z",
+    "cb", "es", "rc", "zz", "gg", "ad"
+]
 
+def _cleanup_names_list(names: list[str]) -> list[str]:
+    start = 0 if "%%" not in names else names.index("%%") + 1
+
+    out: list[str] = []
+    for line in names[start:]:
+        out.append(line.split(",")[0].strip())
+
+    return out
+
+# First iteration: straight conversion from bytes into ASCII
+# Second iteration: Evalute PGP/BIP-39
+def obfuscate_email(mode: EmailMode, buf: bytes) -> list[str]:
+    if mode not in EMAIL_MODES:
+        raise ValueError(f"Incorrect mode provided, must be one of {", ".join(EMAIL_MODES)}: {mode}")
+
+    with open(FIRST_NAMES_PATH, "r") as f:
+        first_names = f.read().splitlines()
+    with open(LAST_NAMES_PATH, "r") as f:
+        last_names = f.read().splitlines()
+
+    FIRST_NAMES = _cleanup_names_list(first_names)
+    LAST_NAMES = _cleanup_names_list(last_names)
+
+    print(f"FIRST_NAMES[0] = ", FIRST_NAMES[0])
+    print(f"len(FIRST_NAMES) = %d", len(FIRST_NAMES))
+    print(f"len(LAST_NAMES) = %d", len(LAST_NAMES))
+
+    out_list: list[str] = []
+    for i in range(0, len(buf), ElementSize.EMAIL.value):
+        element = int.from_bytes(buf[i:i+ElementSize.EMAIL.value])
+
+        tld_idx     = element & 0x1F           # Last 5 bits
+        domain_idx  = (element >> 5) & 0x1F    # Next 5 bits
+        number      = (element >> 10) & 0x1FF  # Next 9 bits
+        last_idx    = (element >> 19) & 0xFFF  # Next 12 bits
+        middle_idx  = (element >> 31) & 0x1F   # Next 5 bits
+        first_idx   = (element >> 36) & 0xFFF  # First 12 bits
+
+        out_str = ""
+        
+        out_str += FIRST_NAMES[first_idx]
+        out_str += "." + MIDDLE[middle_idx]
+        out_str += "." + LAST_NAMES[last_idx]
+        out_str += str(number)
+        out_str += "@" + DOMAINS[domain_idx]
+        out_str += "." + TLDS[tld_idx]
+
+        out_list.append(out_str)
+
+    return out_list
 
 # =======  UUID  ============================================================ #
 
@@ -98,20 +169,7 @@ def obfuscate_uuid(mode: UUIDMode, buf: bytes) -> list[str]:
     return out_list
 
 
-# =======  MAC  ============================================================= #    """Converts a given set of bytes into it's MAC representation"""
-    if len(data) != 6:
-        raise ValueError(f"Input data must be exactly 6 bytes before conversion: {len(data)}")
-
-    out = ""
-    count = 0
-    for i in range(0, len(data), groups_size):
-        count += groups_size
-        if (count < 6):
-            out += f"{int.from_bytes(data[i:i+groups_size]):02X}".upper() + separator
-        else:
-            out += f"{int.from_bytes(data[i:i+groups_size]):02X}".upper()
-
-    return out
+# =======  MAC  ============================================================= #
 
 def obfuscate_mac(mode: MACMode, buf: bytes) -> list[str]:
     """Converts the buf into a list of MACs based on mode."""
@@ -127,7 +185,7 @@ def obfuscate_mac(mode: MACMode, buf: bytes) -> list[str]:
     elif mode == "net":
         group_size = 2
         separator = '.'
-    elif mode == "none":
+    elif mode == "raw":
         group_size = 2
         separator = ''
 
@@ -190,20 +248,27 @@ def obfuscate_ip(mode: IPMode, buf: bytes) -> list[str]:
 _OBFUSCATION_OPS = {
     "ip": {
         "function": obfuscate_ip,
-        "modes": IP_MODES
+        "modes": IP_MODES,
+        "element_size": {
+            "ipv4": ElementSize.IPV4,
+            "ipv6": ElementSize.IPV6,
+        }
     },
     "uuid": {
         "function": obfuscate_uuid,
-        "modes": UUID_MODES
+        "modes": UUID_MODES,
+        "element_size": ElementSize.UUID
  
     },
     "email": {
         "function": obfuscate_email,
-        "modes": EMAIL_MODES
+        "modes": EMAIL_MODES,
+        "element_size": ElementSize.EMAIL
     },
     "mac": {
         "function": obfuscate_mac,
-        "modes": MAC_MODES
+        "modes": MAC_MODES,
+        "element_size": ElementSize.MAC
     },
 }
 
@@ -213,16 +278,21 @@ OPS = [op for op in _OBFUSCATION_OPS.keys()]
 
 # =======  Entrypoint  ====================================================== #
 
-def entrypoint(data: bytes, transform: str, format: str) -> str:
-    mode = _OBFUSCATION_OPS.get(transform.lower())
-    if not mode:
-        raise ValueError(f"Invalid transform '{transform}' for mode obfuscation")
+def entrypoint(data: bytes, op: str, mode: str, extras: list[str], format: str) -> str:
+    op_el = _OBFUSCATION_OPS.get(op)
+    if not op_el:
+        raise ValueError(f"Invalid op '{op}' for obfuscation")
 
-    chunk_size = mode["chunk_size"].value
-    func = mode["function"]
-    padded_data = pad_buffer(chunk_size, data)
+    element_size = op_el["element_size"]
+    print(f"[#] element_size = {element_size}")
+    if isinstance(element_size, dict):
+        element_size = element_size[mode].value
+    else:
+        element_size = element_size.value
+    func = op_el["function"]
 
-    obfuscated_data = cast(list[str], func(chunk_size, padded_data))
+    padded_data = pad_buffer(element_size, data)
+    obfuscated_data = cast(list[str], func(mode, padded_data))
     try:
         transform_func = cast(Callable[[list[str]], str], _TRANSFORMS[format.lower()])
     except KeyError:

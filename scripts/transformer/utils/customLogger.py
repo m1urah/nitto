@@ -1,3 +1,5 @@
+"""Metasploit-like logging formatting."""
+
 import logging
 from typing import cast
 
