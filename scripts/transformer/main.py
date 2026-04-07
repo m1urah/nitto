@@ -1,4 +1,7 @@
+#!/usr/bin/env python3
 """Encrypts or obfuscates payloads to bypass signature-based detection."""
+
+__version__ = "1.0.0"
 
 import argparse
 from pathlib import Path
@@ -301,6 +304,12 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        '-v', '--version', 
+        action='version', 
+        version=f'%(prog)s {__version__}'
+    )
+
+    parser.add_argument(
         "-l", "--list",
         metavar="<type>",
         choices=LIST_CHOICES,
@@ -381,7 +390,7 @@ def main() -> int:
         return -1
     
     entrypoint = cast(Callable[[bytes, str, str, list[str], str], str], TRANSFORMS[args.transform]["entrypoint"])
-    result = entrypoint(data, args.op, args.mode, args.extra, args.format)
+    result = entrypoint(data, args.op, args.mode, args.extra or [], args.format)
     if not result:
         LOGGER.error("Result is empty after aplying %r (%r), something went wrong...", args.mode, args.transform)
         return -1

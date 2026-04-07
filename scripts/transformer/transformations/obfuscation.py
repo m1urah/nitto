@@ -2,6 +2,7 @@
 
 import os
 from enum import Enum
+import sys
 from typing import Callable, Literal, TypeAlias, cast, get_args
 
 from utils.customLogger import LOGGER
@@ -29,8 +30,8 @@ UUID_MODES = list(get_args(UUIDMode))
 EmailMode : TypeAlias = Literal["std"]
 EMAIL_MODES = list(get_args(EmailMode))
 
-FIRST_NAMES_PATH = f"{os.path.dirname(__file__)}/../../helpers/wordLists/firstNames.gperf"
-LAST_NAMES_PATH = f"{os.path.dirname(__file__)}/../../helpers/wordLists/lastNames.gperf"
+FIRST_NAMES_PATH = f"scripts/helpers/wordLists/firstNames.gperf"
+LAST_NAMES_PATH = f"scripts/helpers/wordLists/lastNames.gperf"
 
 # =======  Transformation  ================================================== #
 
@@ -98,23 +99,35 @@ def _cleanup_names_list(names: list[str]) -> list[str]:
 
     return out
 
-# First iteration: straight conversion from bytes into ASCII
-# Second iteration: Evalute PGP/BIP-39
+def _get_resource_path(relative_path) -> str:
+    """Get the absolute path to a resource when running on exe or not."""
+    try:
+        # PyInstaller creates a temp folder and stores its path in sys._MEIPASS
+        base_path = sys._MEIPASS # type: ignore
+    except AttributeError:
+        # Find the dir where the word lists exists
+        current = os.path.dirname(__file__)
+        while current != os.path.dirname(current): # Stop at root
+            test_path = os.path.join(current, relative_path)
+            if os.path.exists(test_path):
+                return test_path
+            current = os.path.dirname(current)
+
+        base_path = os.getcwd()
+
+    return os.path.join(base_path, relative_path)
+
 def obfuscate_email(mode: EmailMode, buf: bytes) -> list[str]:
     if mode not in EMAIL_MODES:
         raise ValueError(f"Incorrect mode provided, must be one of {", ".join(EMAIL_MODES)}: {mode}")
 
-    with open(FIRST_NAMES_PATH, "r") as f:
+    with open(_get_resource_path(FIRST_NAMES_PATH), "r") as f:
         first_names = f.read().splitlines()
-    with open(LAST_NAMES_PATH, "r") as f:
+    with open(_get_resource_path(LAST_NAMES_PATH), "r") as f:
         last_names = f.read().splitlines()
 
     FIRST_NAMES = _cleanup_names_list(first_names)
     LAST_NAMES = _cleanup_names_list(last_names)
-
-    print(f"FIRST_NAMES[0] = ", FIRST_NAMES[0])
-    print(f"len(FIRST_NAMES) = %d", len(FIRST_NAMES))
-    print(f"len(LAST_NAMES) = %d", len(LAST_NAMES))
 
     out_list: list[str] = []
     for i in range(0, len(buf), ElementSize.EMAIL.value):
@@ -284,7 +297,6 @@ def entrypoint(data: bytes, op: str, mode: str, extras: list[str], format: str) 
         raise ValueError(f"Invalid op '{op}' for obfuscation")
 
     element_size = op_el["element_size"]
-    print(f"[#] element_size = {element_size}")
     if isinstance(element_size, dict):
         element_size = element_size[mode].value
     else:

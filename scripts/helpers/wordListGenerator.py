@@ -1,3 +1,5 @@
+"""Generate gperf lookup tables for email-based obfuscation"""
+
 import os
 import re
 import shutil
@@ -97,10 +99,46 @@ def to_ascii(text: str) -> str:
 
     return stripped.encode("ascii", "ignore").decode("ascii")
 
-def generate_list(what: Literal["first", "last", "other"], file_name: str, count: int, count_indiv: int) -> None:
-    suffix = "names" if what != "other" else "words"
-    print(f"[*] Generating list of {what} {suffix}, this migh take some seconds...")
+def generate_hash_table(
+        what: Literal["first", "last", "other"],
+        suffix: str,
+        file_name: str
+):
+    if not shutil.which("gperf"):
+        print("[!] gperf is not installed. Install it to automate hash table generation.")
 
+    print("[*] Creating header file...")
+    try:
+        func_name = "Get" + what.capitalize() + suffix.capitalize()[:-1]  # Remove final s
+        hash_name = "Hash" + what.capitalize() + suffix.capitalize()[:-1]
+        gperf_file = file_name
+        header_file = file_name.split(".")[0] + ".h"
+
+        out = subprocess.run(
+            ["gperf", "-t", "-K", "key", "-N", func_name, "-H", hash_name, "-C", gperf_file],
+            check=True, capture_output=True, text=True
+        )
+
+        out_str = re.sub(r"^#line.*\n?", "", out.stdout, flags=re.MULTILINE)
+
+        index = out_str.find("#if") - 1
+        out_str = out_str[:index] + textwrap.dedent(f"""
+            #pragma once
+            #ifndef {what.upper()}_{suffix.upper()}_H
+            #define {what.upper()}_{suffix.upper()}_H
+
+            #include <string.h>
+        """) + "\n" + out_str[index+1:]
+
+        with open(header_file, "w", encoding="utf-8") as f:
+            # Remove all #line directives
+            f.write(out_str)
+            f.write(f"\n#endif // {what.upper()}_{suffix.upper()}_H")
+        
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("[-] Program is not installed or failed to run")
+
+def generate_list(what: Literal["first", "last", "other"], count: int, count_indiv: int) -> list[str]:
     time_start = time.time()
     
     iter = 0
@@ -137,13 +175,21 @@ def generate_list(what: Literal["first", "last", "other"], file_name: str, count
         items.append(item_ascii)
         iter+=1
 
-    print(f"[+] List generated after {iter} iterations")
+    print(f"[+] List generated after {iter} iterations and {int(time.time() - time_start)} seconds")
+    return items
 
-    items_str = [
-        f"{item + ',':<{MAX_ELEMENT_SIZE + 1}}{i % count_indiv}"
-        for i, item in enumerate(items)
+def generate_gperf_header(what: Literal["first", "last", "other"], file_name: str, count: int, count_indiv: int) -> None:
+    suffix = "names" if what != "other" else "words"
+    print(f"[*] Generating list of {what} {suffix}, this migh take some seconds...")
+
+    # ===  LIST OF NAMES/WORDS  ===
+    items_list = generate_list(what, count, count_indiv)
+    items_with_idx = [
+        f"{item + ',':<{MAX_ELEMENT_SIZE + 1}}{i % count}"
+        for i, item in enumerate(items_list)
     ]
 
+    # ===  GPERF FILE  ===
     struct_str = textwrap.dedent(f"""\
     %{{
     typedef struct {what.upper()}_{suffix.upper()[:-1]} {{
@@ -156,41 +202,11 @@ def generate_list(what: Literal["first", "last", "other"], file_name: str, count
 
     with open(file_name, "w", encoding="utf-8") as f:
         f.write(f"{struct_str}\n")
-        f.writelines("\n".join(items_str))
+        f.writelines("\n".join(items_with_idx))
 
-    if not shutil.which("gperf"):
-        print("[!] gperf is not installed. Install it to automate hash table generation.")
-
-    print("[*] Creating header file...")
-    try:
-        func_name = "Get" + what.capitalize() + suffix.capitalize()[:-1]  # Remove final s
-        hash_name = "Hash" + what.capitalize() + suffix.capitalize()[:-1]
-        gperf_file = file_name
-        header_file = file_name.split(".")[0] + ".h"
-
-        out = subprocess.run(
-            ["gperf", "-t", "-K", "key", "-N", func_name, "-H", hash_name, "-C", gperf_file],
-            check=True, capture_output=True, text=True
-        )
-
-        out_str = re.sub(r"^#line.*\n?", "", out.stdout, flags=re.MULTILINE)
-
-        index = out_str.find("#if") - 1
-        out_str = out_str[:index] + textwrap.dedent(f"""
-            #pragma once
-            #ifndef {what.upper()}_{suffix.upper()}_H
-            #define {what.upper()}_{suffix.upper()}_H
-
-            #include <string.h>
-        """) + "\n" + out_str[index+1:]
-
-        with open(header_file, "w", encoding="utf-8") as f:
-            # Remove all #line directives
-            f.write(out_str)
-            f.write(f"\n#endif // {what.upper()}_{suffix.upper()}_H")
-        
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        print("[-] Program is not installed or failed to run")
+    # ===  C HEADER  ===
+    generate_hash_table(what, suffix, file_name)
+    
 
 if __name__ == "__main__":
     wordlists_dir = os.path.dirname(__file__) + "/wordLists"
@@ -218,32 +234,6 @@ if __name__ == "__main__":
         print("[*] Exiting...")
         sys.exit(0)
 
-    generate_list("first", first_file_name, FIRST_NAMES_COUNT, FIRST_NAMES_COUNT)
-    generate_list("last", last_file_name, LAST_NAMES_COUNT, LAST_NAMES_COUNT)
-    generate_list("other", others_file_name, len(MIDDLE) + len(DOMAINS) + len(TLDS), 32)
-
-    """
-    if not shutil.which("gperf"):
-        print("[!] gperf is not installed. Install it to automate hash table generation.")
-
-    try:
-        params_list = [
-            ("GetFirstName", "HashFirstName", "firstNames.gperf", "firstNames.h"),
-            ("GetLastName", "HashLastName", "lastNames.gperf", "lastNames.h"),
-            ("GetOther", "HashOther", "others.gperf", "others.h"),
-        ]
-
-        for func_name, hash_name, gperf_file, header_file in params_list:
-            out = subprocess.run(
-                ["gperf", "-t", "-N", func_name, "-H", hash_name, "-C", f"{wordlists_dir}/{gperf_file}"],
-                check=True, capture_output=True, text=True
-            )
-
-            with open(f"{wordlists_dir}/{header_file}", "w", encoding="utf-8") as f:
-                # Remove all #line directives
-                f.write(re.sub(r"^#line.*\n?", "", out.stdout, flags=re.MULTILINE))
-                f.write("\n#endif // ")
-        
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        print("[-] Program is not installed or failed to run")
-    """
+    generate_gperf_header("first", first_file_name, FIRST_NAMES_COUNT, FIRST_NAMES_COUNT)
+    generate_gperf_header("last", last_file_name, LAST_NAMES_COUNT, LAST_NAMES_COUNT)
+    generate_gperf_header("other", others_file_name, len(MIDDLE) + len(DOMAINS) + len(TLDS), 32)
