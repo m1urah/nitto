@@ -1,0 +1,10 @@
+.*/
+
+# C build
+obj/
+*.exe
+
+# Python build
+*__pycache__*
+dist/
+build/
