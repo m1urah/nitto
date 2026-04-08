@@ -13,12 +13,10 @@ Nitto implements a **novel\* obfuscation technique** that I created myself: **em
 
 See the [Email-based obfuscation](#email-based-obfuscation) section for more info.
 
-> [!NOTE]
-> This project was entirely created by me without the help of any AI-based tools as a way to improve my coding skills. You'll probably find plenty of stuff that could be improved or refactored, be my guest ;)
-
 ## Table of Contents
 
 - [Table of Contents](#table-of-contents)
+- [Remarks](#remarks)
 - [Overview](#overview)
   - [Usage (concise)](#usage-concise)
   - [Project Structure](#project-structure)
@@ -42,6 +40,18 @@ See the [Email-based obfuscation](#email-based-obfuscation) section for more inf
 - [Logging Format](#logging-format)
 - [Wishlist](#wishlist)
 - [License](#license)
+
+## Remarks
+
+- First, please keep in mind that the main purpose of developing this tool was purely educational (yeah, I coded it myself). You'll probably find plenty of stuff that could be improved or refactored, so be my guest ;)
+
+- It goes without saying, but this tool is meant for legimitate security research and educational purposes only, not for malicous plans or activies.
+
+- For the sake of simplicity, it is often assumed that the input parameters of the functions are well-defined, and that the user knows what they're doing. As a result, some specific error checks have been ommited. However, this doesn't mean that appropiate checks haven't been included where necessary, they have. If you intend to use my code in a live environment make sure to double check it, specially when dealing with memory allocations and [POINTERS](./images/lovely_pointers.png)!!
+
+- The bundled C encryption libraries include custom implementations of the cipher algorithms used in the Python module, written by very capable devs. Eventhough they claim it's RFC-whatever compliant, and not that I don't trust them (≖_≖), be aware that most security professionals strongly advise against using custom ciphers implementations, AND FOR GOOD REASON! Use it for learning, experimenting, or even for your own payloads, but not for classified plans to invade Mars... although, I'd be interested to get to know more about that.
+
+- If you like what you see, I have a blog! Check it out at [allthingsmalware.com](https://allthingsmalware.com)
 
 ## Overview
 
@@ -374,4 +384,10 @@ All the stuff that I want to implement in the near future:
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+All the contents of this repo, except the ones that I didn't write, are licensed under the MIT License. See the `LICENSE` file for details.
+
+This project uses the standalone `.c` and/or `.h` files from following projects:
+
+- [ChaCha20](https://github.com/marcizhu/ChaCha20)
+- [micro-AES](https://github.com/polfosol/micro-AES)
+- [RC4](https://github.com/openssl/openssl): modified to remove OpenSSL dependencies for standalone compilation
