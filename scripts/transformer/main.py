@@ -312,6 +312,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "-l", "--list",
         metavar="<type>",
+        nargs='?',
+        const="all",
         choices=LIST_CHOICES,
         help=f"List all modules for [type]. Types are: {', '.join(LIST_CHOICES)}"
     )

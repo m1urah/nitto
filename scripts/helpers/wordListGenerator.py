@@ -73,7 +73,7 @@ DOMAINS = [ # 32 options
     "charter",  "cox", "freenet", "rambler", "libero"
 ]
 TLDS = [    # 32 options
-    "com", "net", "org", "edu", "xyz", "in fo", "io", "me", "co", 
+    "com", "net", "org", "edu", "xyz", "info", "io", "me", "co", 
     "biz", "es", "de", "uk", "fr", "ca", "au", "jp", "cn", "br",
     "it", "nl", "ru", "in", "mx", "pl", "be", "se", "at", "eu",
     "ai", "cloud", "online"
