@@ -1,10 +1,15 @@
 %{
-typedef struct OTHER_WORD {
+#ifndef HASH_TABLE_VALUE_DEFINED
+#define HASH_TABLE_VALUE_DEFINED
+
+typedef struct HASH_TABLE_VALUE {
     const char *key;
     int idx;
-} OTHER_WORD, *POTHER_WORD;
+} HASH_TABLE_VALUE, *PHASH_TABLE_VALUE;
 %}
-struct OTHER_WORD;
+struct HASH_TABLE_VALUE;
+
+#endif // HASH_TABLE_VALUE_DEFINED
 %%
 a,                    0
 b,                    1

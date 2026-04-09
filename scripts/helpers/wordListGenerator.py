@@ -130,24 +130,28 @@ def generate_hash_table(
             #include <string.h>
         """) + "\n" + out_str[index+1:]
 
+        if os.path.exists(header_file):
+            os.remove(header_file) 
         with open(header_file, "w", encoding="utf-8") as f:
             # Remove all #line directives
             f.write(out_str)
             f.write(f"\n#endif // {what.upper()}_{suffix.upper()}_H")
         
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        print("[-] Program is not installed or failed to run")
+    except subprocess.CalledProcessError as e:
+        print(f"[-] Program is not installed or failed to run: {e.stderr}")
 
 def generate_list(what: Literal["first", "last", "other"], count: int, count_indiv: int) -> list[str]:
     time_start = time.time()
     
     iter = 0
+    elapsed_count = 5
     items: list[str] = []
     while len(items) < count:
         # Print every 5s
         elapsed = int(time.time() - time_start)
-        if elapsed and (elapsed % 5) == 0:
+        if elapsed and (elapsed % elapsed_count) == 0:
             print(f"[*] Still creating | idx={iter} | elapsed={elapsed}s")
+            elapsed_count += 5
 
         # Don't use unique with FAKE, takes longer. It's easier to keep it "random"
         item = ""
@@ -180,24 +184,29 @@ def generate_list(what: Literal["first", "last", "other"], count: int, count_ind
 
 def generate_gperf_header(what: Literal["first", "last", "other"], file_name: str, count: int, count_indiv: int) -> None:
     suffix = "names" if what != "other" else "words"
-    print(f"[*] Generating list of {what} {suffix}, this migh take some seconds...")
+    print(f"[*] Generating list of {what} {suffix}, this migh a little bit...")
 
     # ===  LIST OF NAMES/WORDS  ===
     items_list = generate_list(what, count, count_indiv)
     items_with_idx = [
-        f"{item + ',':<{MAX_ELEMENT_SIZE + 1}}{i % count}"
+        f"{item + ',':<{MAX_ELEMENT_SIZE + 1}}{i % count_indiv}"
         for i, item in enumerate(items_list)
     ]
 
     # ===  GPERF FILE  ===
     struct_str = textwrap.dedent(f"""\
     %{{
-    typedef struct {what.upper()}_{suffix.upper()[:-1]} {{
+    #ifndef HASH_TABLE_VALUE_DEFINED
+    #define HASH_TABLE_VALUE_DEFINED
+
+    typedef struct HASH_TABLE_VALUE {{
         const char *key;
         int idx;
-    }} {what.upper()}_{suffix.upper()[:-1]}, *P{what.upper()}_{suffix.upper()[:-1]};
+    }} HASH_TABLE_VALUE, *PHASH_TABLE_VALUE;
     %}}
-    struct {what.upper()}_{suffix.upper()[:-1]};
+    struct HASH_TABLE_VALUE;
+    
+    #endif // HASH_TABLE_VALUE_DEFINED
     %%""")
 
     with open(file_name, "w", encoding="utf-8") as f:
@@ -206,7 +215,6 @@ def generate_gperf_header(what: Literal["first", "last", "other"], file_name: st
 
     # ===  C HEADER  ===
     generate_hash_table(what, suffix, file_name)
-    
 
 if __name__ == "__main__":
     wordlists_dir = os.path.dirname(__file__) + "/wordLists"
