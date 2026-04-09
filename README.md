@@ -4,18 +4,19 @@ A simple tool to evade signature-based AV detection **in Windows** by applying e
 
 The repo is organized into two different *modules*:
 
-- **Python script**, that transforms your binary payloads into its obfuscated/encrypted form.
+- **Python script**, that transforms the binary payloads into its obfuscated/encrypted form.
 - **C code**, that implements custom deobfuscation and decryption functions to evade static analysis of WinAPI and NTDLL calls.
 
 Nitto implements a **novel\* obfuscation technique** that I created myself: **email-based obfuscaton**, which converts 6-byte payloads into emails of the form: `[first_name].[middle_initial].[last_name][number]@[domain].[tld]`.
 
-\*I haven't seen any similar email-based obfuscation techniques used in the wild yet, hence the *novel* part.
+\*I haven't seen any similar techniques used in the wild yet, hence the *novel* part.
+
+The cool thing about this technique is that it makes it harder for LLM-assisted deoubfuscation tools at first glance. That said, if they extract the lookup tables from the PE (they must be bundled in there), they can eventually reverse it **with enough** context (of course). But honestly, that applies to all other techniques too.
 
 See the [Email-based obfuscation](#email-based-obfuscation) section for more info.
 
 ## Table of Contents
 
-- [Table of Contents](#table-of-contents)
 - [Remarks](#remarks)
 - [Overview](#overview)
   - [Usage (concise)](#usage-concise)
@@ -31,11 +32,13 @@ See the [Email-based obfuscation](#email-based-obfuscation) section for more inf
     - [Output and Format](#output-and-format)
     - [Bundle Code](#bundle-code)
   - [C Module](#c-module)
+    - [Local Build](#local-build)
 - [Obfuscation](#obfuscation)
   - [Email-based Obfuscation](#email-based-obfuscation)
     - [Byte-to-alphanumeric conversion](#byte-to-alphanumeric-conversion)
     - [Lookup table-based conversion](#lookup-table-based-conversion)
   - [Custom C Deobfuscation](#custom-c-deobfuscation)
+- [Encryption](#encryption)
 - [Padding](#padding)
 - [Logging Format](#logging-format)
 - [Wishlist](#wishlist)
@@ -55,12 +58,14 @@ See the [Email-based obfuscation](#email-based-obfuscation) section for more inf
 
 ## Overview
 
-Nitto (short for incog**nito**) *mainly* refers to the python script and transforms a payload using **one of two modes**:
+Nitto (short for incog**nito**) *mainly* refers to the python script, and transforms a payload using **one of two modes**:
 
-- **Encryption**: supports for ciphers (AES, ChaCha20, RC4, and XOR) with different modes of operation.
-- **Obfuscation**: converts the payload into a list of IP, MAC, UUID, or email strings.
+- **Encryption**: supports for ciphers (AES, ChaCha20, RC4, and XOR) with different modes of operation
+- **Obfuscation**: converts the payload into a list of IP, MAC, UUID, or email strings
 
 It takes the bytes from stdin, a file in the system, or an simple string and perform the required transformation.
+
+The **Python code** implements the obfuscation and encryption, while the **C code** implements the **de**obfuscation and **de**cryption, and a sample application demonstrating each obfuscation technique. See the [C Module usage](#c-module) section to see how to run it.
 
 ### Usage (concise)
 
@@ -87,7 +92,7 @@ which will transform the `Hello World!` string into its "email form", based on t
 
 > Note that nitto here refers to both `nitto.exe`, and the `python .\scripts\transformations\main.py` commands.
 
-For more info, see the [Usage](#usage) section.
+I used two different input methods (`-i` arg and piping) above on purpose, any input method works with any transform. For more info, see the [Usage](#usage) section.
 
 ### Project Structure
 
@@ -95,18 +100,23 @@ The repo is structured as follows:
 
 ```plaintext
 .
-├── include
-│    └── aes.h         # Bundled with it's corresponding .c file
-├── scripts
-│    ├── helpers       # Word lists and the generator script
-│    └── transformers  # Transformer logic
-├── src
+├── include/
+│    ├── encryption/    # Encryption headers
+│    ├── hashTables/    # Hash tables for obfuscation
+│    └── obfuscation/   # Obfuscation headers
+├── scripts/
+│    ├── helpers/       # Word lists and word list generator
+│    └── transformer/   # Python transformation logic
+├── src/
 │    ├── main.c
-│    └── aes.c         # tiny-AES-C implementation
-├── .gitignore
+│    ├── encryption/    # Encryption implementations
+│    └── obfuscation/   # Obfuscation implementations
+├── images/             # Project images
+├── licenses/           # Boring stuff
+├── nitto.*             # Visual Studio stuff
 ├── LICENSE
-├── Makefile           # Builds the custom C API implementation
-└── README.md          # This file ;)
+├── Makefile            # Build script for C module
+└── README.md           # This file ;)
 ```
 
 ### Code Structure
@@ -122,16 +132,15 @@ Lives under two dirs:
 - `include/`: for headers
 - `src/`: for the actual files
 
-and it's structured into four files:
+and it's structured into:
 
-- The `main.c` file
-- `email2byte.c`: deobfuscates email lists into its binary representation
-- `ip2byte.c`: the same but for IPs
-- `decrypt.c`: *custom* implementation of AES, OCB3, RC4, and XOR decryptors
+- The `main.c` file: contains a sample implementation of the 4 main obfuscation tecniques
+- `encryption/`: AES, ChaCha20, RC4, and XOR implementations
+- `obfuscation/`: deobfuscates IP, MAC, UUID/GUID, or email lists into its binary representation
 
 #### Python Code
 
-Under `scripts/transformer` we have 3 different modules:
+Under `scripts/transformer` we have:
 
 - The `main.py` file
 - `transformations`: obfuscation and encryption logic
@@ -155,11 +164,16 @@ The following **requirements** must be either installed or available in your **W
 3. Packages from the `requirements.txt` file(s) installed into the venv
 4. (Optional) [gperf](https://www.gnu.org/software/gperf/#TOCdownloading) if you want to re-create the lookup tables (i.e. run `wordListGenerator.py`)
 
-And if you want to compile and run the C code as well (recommended):
+If you want to run the C code demonstration as well, you have two options:
 
-5. `gcc` compiler, see [MSYS2](https://www.msys2.org/) for install instructions
-6. `Make` tool
-7. [Windows SDK](https://learn.microsoft.com/en-us/windows/apps/windows-sdk/downloads)
+1. Use Visual Studio
+2. Compile it using the `Makefile` and run it
+
+For the latter, you need to install:
+
+- `gcc` compiler, see [MSYS2](https://www.msys2.org/) for install instructions
+- `Make` tool
+- [Windows SDK](https://learn.microsoft.com/en-us/windows/apps/windows-sdk/downloads) (bundled with Visual Studio)
 
 ### Python Module
 
@@ -221,6 +235,22 @@ from the root directory. This will create the `dist/nitto/nitto.exe` executable.
 
 ### C Module
 
+On Visual Studio just click **Run** and the program will run, displaying the sample deobfuscation results for all 4 techniques.
+
+First iteration:
+
+![First iteration, waiting for an Enter](images/sample-deobfuscation-code-running-1.png)
+
+Click **Enter** to continue with the execution. After 4 **Enter**s, the program will finish:
+
+![Program finished](images/sample-deobfuscation-code-running-2.png)
+
+Full flow:
+
+![Full flow](images/full-flow.gif)
+
+#### Local Build
+
 To build the code, simply run:
 
 ```shell
@@ -243,7 +273,7 @@ The IPfuscation technique and its variants (MAC and UUID) are not new, they have
 - `RtlIpv6AddressToStringA`
 - `UuidFromStringA`
 
-However, most modern EDRs now monitor for high volumes of these "string-to-binary" API calls, specially when followed by memory allocation functions like `VirtualAllow` or `WriteProcessMemory`. Hence the need to implement custom code that can perform that same translation.
+However, most modern EDRs now monitor for high volumes of these "string-to-binary" API calls, specially when followed by memory allocation functions like `VirtualAllow` or `WriteProcessMemory`. Hence the need to implement custom code that can perform that same translation. See the [Custom C Deobfuscation](#custom-c-deobfuscation) section.
 
 ### Email-based Obfuscation
 
@@ -263,7 +293,7 @@ Method one is more compact and data-preserving but results are not realistic, no
 This method priotizes data preservation and lower-byte count over realism.
 
 1. Iterate through each byte:
-   - If byte represents a lowercase letter (a-z, `\x61`-`\x7a`), use the character directly
+   - If byte represents a lowercase letter (a-z, `\x61`-`\x7a`), use the character directly <-- or use uppercase letters too if treating emails as case-sensitive
    - Otherwise, convert to decimal representation
    - ASCII digit bytes (`\x30`-`\x39`) are used as-is, not converted to numbers, i.e. `\x30` = `60`, and not `0`
 2. Organize bytes into variable-sized emails (4-10 bytes for each) and join numbers (not letters) with periods, hypens, or underscores to create a pseudo-realistic local part
@@ -343,11 +373,36 @@ We went from 14 bytes to 155.
 
 ### Custom C Deobfuscation
 
-Whatever
+All deobfuscation logic lives under the C module, i.e. inside `src/` and `include/` directories.
+
+Instead of using WinAPI or NTDLL calls, I've decided to implement my own functions for two reasons:
+
+1. These obfuscation techniques are mostly 4 years old, except the email-based one. As such, EDRs have caught on and they now monitor for high volumes of these "string-to-binary" API calls, especially when in combination with other functions known to be used by malware. If these DLLs are not loaded, we are *less likely* to get detected
+2. As mentioned multiple times already, I mainly created this tool to improve my coding and maldev skills
+
+Custom functions:
+
+- [RtlIpv6StringToAddressA](https://learn.microsoft.com/en-us/windows/win32/api/ip2string/nf-ip2string-rtlipv6stringtoaddressa) -> `Ipv6StringToAddress`
+- [RtlIpv4StringToAddressA](https://learn.microsoft.com/en-us/windows/win32/api/ip2string/nf-ip2string-rtlipv4stringtoaddressa) -> `Ipv4StringToAddress`
+- [RtlEthernetStringToAddressA](https://learn.microsoft.com/en-us/windows/win32/api/ip2string/nf-ip2string-rtlethernetstringtoaddressa) -> `EthernetStringToAddress`
+- [UuidFromStringA](https://learn.microsoft.com/en-us/windows/win32/api/rpcdce/nf-rpcdce-uuidfromstringa) -> `UUIDFromString`
+- `EmailStringToBytes` implements the email lookup table-based obfuscation
+
+The `.h` files explain each function in detail.
+
+## Encryption
+
+As mentioned in the [Remarks](#remarks) section, using custom cipher implementations is usually discouraged, and that's exactly why I'm using them. Jokes aside, the main objective of this project wasn't to re-invent the cipher wheel, but rather improve my skills and get to know how obfuscation really works at a *lower* lvl. Don't get me wrong, encryption is also really useful for masquerading one's actions, but implementing the ciphers from scratch would'be taken me far too long, and the results would probably have been much worse than just getting battle-tested implementations.
+
+This project uses the standalone `.c` and/or `.h` files from the following projects:
+
+- [ChaCha20](https://github.com/marcizhu/ChaCha20)
+- [micro-AES](https://github.com/polfosol/micro-AES)
+- [RC4](https://github.com/openssl/openssl): modified to remove OpenSSL dependencies for standalone compilation
 
 ## Padding
 
-Padding is commonly used for encryption, and it means adding data to a message prior to the transformation so that the plaintext meets specifics length requirements. In our case, padding is used only for obfuscation, as all the ciphers used for encryption **don't require it**.
+Padding is commonly used for encryption, and it means adding data to a message prior to the transformation so that the plaintext meets specifics length requirements. In our case, padding is used only for obfuscation, as all the ciphers used in encryption **don't need it**.
 
 Each obfuscation technique divides the payload into byte-sized blocks:
 
@@ -381,13 +436,8 @@ All the stuff that I want to implement in the near future:
 - [ ] Implement EmailFuscation byte-to-alphanumeric conversion
 - [ ] "Encryption first, then obfuscation" mode for the same payload
 - [ ] Use multiple obfuscations at once for the same payload, to generate a real-like dictionary (or list) of data
+- [ ] (Low priority) Implement `Strict == FALSE` in `Ipv4StringToAddress`
 
 ## License
 
 All the contents of this repo, except the ones that I didn't write, are licensed under the MIT License. See the `LICENSE` file for details.
-
-This project uses the standalone `.c` and/or `.h` files from following projects:
-
-- [ChaCha20](https://github.com/marcizhu/ChaCha20)
-- [micro-AES](https://github.com/polfosol/micro-AES)
-- [RC4](https://github.com/openssl/openssl): modified to remove OpenSSL dependencies for standalone compilation

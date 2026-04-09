@@ -3,6 +3,7 @@
 # C build
 obj/
 x64/
+nitto/
 *.exe
 
 # Python build
