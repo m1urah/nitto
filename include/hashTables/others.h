@@ -40,9 +40,9 @@
 #define HASH_TABLE_VALUE_DEFINED
 
 typedef struct HASH_TABLE_VALUE {
-    const char *key;
+    const char* key;
     int idx;
-} HASH_TABLE_VALUE, *PHASH_TABLE_VALUE;
+} HASH_TABLE_VALUE, * PHASH_TABLE_VALUE;
 struct HASH_TABLE_VALUE;
 
 #endif // HASH_TABLE_VALUE_DEFINED;
@@ -62,9 +62,9 @@ inline
 #endif
 #endif
 static unsigned int
-HashOtherWord (register const char *str, register size_t len)
+HashOtherWord(register const char* str, register size_t len)
 {
-  static const unsigned short asso_values[] =
+    static const unsigned short asso_values[] =
     {
       279, 279, 279, 279, 279, 279, 279, 279, 279, 279,
       279, 279, 279, 279, 279, 279, 279, 279, 279, 279,
@@ -93,27 +93,27 @@ HashOtherWord (register const char *str, register size_t len)
       279, 279, 279, 279, 279, 279, 279, 279, 279, 279,
       279, 279, 279, 279, 279, 279, 279, 279
     };
-  register unsigned int hval = len;
+    register unsigned int hval = len;
 
-  switch (hval)
+    switch (hval)
     {
-      default:
+    default:
         hval += asso_values[(unsigned char)str[2]];
-      /*FALLTHROUGH*/
-      case 2:
-        hval += asso_values[(unsigned char)str[1]+2];
-      /*FALLTHROUGH*/
-      case 1:
+        /*FALLTHROUGH*/
+    case 2:
+        hval += asso_values[(unsigned char)str[1] + 2];
+        /*FALLTHROUGH*/
+    case 1:
         hval += asso_values[(unsigned char)str[0]];
         break;
     }
-  return hval;
+    return hval;
 }
 
-const struct HASH_TABLE_VALUE *
-GetOtherWord (register const char *str, register size_t len)
+const struct HASH_TABLE_VALUE*
+GetOtherWord(register const char* str, register size_t len)
 {
-  static const struct HASH_TABLE_VALUE wordlist[] =
+    static const struct HASH_TABLE_VALUE wordlist[] =
     {
       {""},
       {"m",                    12},
@@ -272,19 +272,19 @@ GetOtherWord (register const char *str, register size_t len)
       {"edu",                  3}
     };
 
-  if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)
+    if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)
     {
-      register unsigned int key = HashOtherWord (str, len);
+        register unsigned int key = HashOtherWord(str, len);
 
-      if (key <= MAX_HASH_VALUE)
+        if (key <= MAX_HASH_VALUE)
         {
-          register const char *s = wordlist[key].key;
+            register const char* s = wordlist[key].key;
 
-          if (*str == *s && !strcmp (str + 1, s + 1))
-            return &wordlist[key];
+            if (*str == *s && !strcmp(str + 1, s + 1))
+                return &wordlist[key];
         }
     }
-  return 0;
+    return 0;
 }
 
 #endif // OTHER_WORDS_H

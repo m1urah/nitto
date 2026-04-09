@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="nitto.vcxproj" Id="d6a53428-d90e-4b8b-8949-4b997d367479" />
+</Solution>

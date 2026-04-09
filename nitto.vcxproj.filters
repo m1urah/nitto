@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\encryption">
+      <UniqueIdentifier>{7af08fe6-e862-48a8-9014-e0278bec9bc5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\obfuscation">
+      <UniqueIdentifier>{28fd901b-8b9b-41f7-ba3d-b35e30972e3e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\hashTables">
+      <UniqueIdentifier>{17ab8de6-6a05-40d0-b6cd-feca924c6394}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\encryption">
+      <UniqueIdentifier>{9a928b67-7e4f-4874-9165-9513a54944b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\obfuscation">
+      <UniqueIdentifier>{d6c87f3a-baef-4e0e-9ee3-41c68a2a423d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\encryption\micro_aes.c">
+      <Filter>Source Files\encryption</Filter>
+    </ClCompile>
+    <ClCompile Include="src\encryption\rc4.c">
+      <Filter>Source Files\encryption</Filter>
+    </ClCompile>
+    <ClCompile Include="src\obfuscation\email2byte.c">
+      <Filter>Source Files\obfuscation</Filter>
+    </ClCompile>
+    <ClCompile Include="src\obfuscation\ip2byte.c">
+      <Filter>Source Files\obfuscation</Filter>
+    </ClCompile>
+    <ClCompile Include="src\obfuscation\mac2byte.c">
+      <Filter>Source Files\obfuscation</Filter>
+    </ClCompile>
+    <ClCompile Include="src\obfuscation\uuid2byte.c">
+      <Filter>Source Files\obfuscation</Filter>
+    </ClCompile>
+    <ClCompile Include="src\obfuscation\common.c">
+      <Filter>Source Files\obfuscation</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\obfuscation\common.h">
+      <Filter>Header Files\obfuscation</Filter>
+    </ClInclude>
+    <ClInclude Include="include\obfuscation\email2byte.h">
+      <Filter>Header Files\obfuscation</Filter>
+    </ClInclude>
+    <ClInclude Include="include\obfuscation\ip2byte.h">
+      <Filter>Header Files\obfuscation</Filter>
+    </ClInclude>
+    <ClInclude Include="include\obfuscation\mac2byte.h">
+      <Filter>Header Files\obfuscation</Filter>
+    </ClInclude>
+    <ClInclude Include="include\obfuscation\uuid2byte.h">
+      <Filter>Header Files\obfuscation</Filter>
+    </ClInclude>
+    <ClInclude Include="include\hashTables\lastNames.h">
+      <Filter>Header Files\hashTables</Filter>
+    </ClInclude>
+    <ClInclude Include="include\hashTables\others.h">
+      <Filter>Header Files\hashTables</Filter>
+    </ClInclude>
+    <ClInclude Include="include\hashTables\firstNames.h">
+      <Filter>Header Files\hashTables</Filter>
+    </ClInclude>
+    <ClInclude Include="include\encryption\ChaCha20.h">
+      <Filter>Header Files\encryption</Filter>
+    </ClInclude>
+    <ClInclude Include="include\encryption\micro_aes.h">
+      <Filter>Header Files\encryption</Filter>
+    </ClInclude>
+    <ClInclude Include="include\encryption\rc4.h">
+      <Filter>Header Files\encryption</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
