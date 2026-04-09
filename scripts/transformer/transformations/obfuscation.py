@@ -248,7 +248,7 @@ def obfuscate_ip(mode: IPMode, buf: bytes) -> list[str]:
             else:
                 out_str += f"{int.from_bytes(element[j:j+group_size]):04X}".upper()
             
-            if (count < ElementSize.MAC.value):
+            if (count < len(element)):
                 out_str += separator
 
         out_list.append(out_str)
