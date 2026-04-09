@@ -54,6 +54,9 @@
     <ClCompile Include="src\obfuscation\common.c">
       <Filter>Source Files\obfuscation</Filter>
     </ClCompile>
+    <ClCompile Include="src\encryption\xor.c">
+      <Filter>Source Files\encryption</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\obfuscation\common.h">
@@ -87,6 +90,9 @@
       <Filter>Header Files\encryption</Filter>
     </ClInclude>
     <ClInclude Include="include\encryption\rc4.h">
+      <Filter>Header Files\encryption</Filter>
+    </ClInclude>
+    <ClInclude Include="include\encryption\xor.h">
       <Filter>Header Files\encryption</Filter>
     </ClInclude>
   </ItemGroup>

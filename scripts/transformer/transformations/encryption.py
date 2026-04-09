@@ -50,13 +50,13 @@ def _transform_common(data: bytes, prefix: str = "") -> str:
 
     return out
 
-def _transform_into_python(data: bytes) -> str:
-    out = "buf =  b\"\"\n"
-    out += _transform_common(data, prefix="buf += b\"")
+def _transform_into_python(data: bytes, buf_name: str = "buf") -> str:
+    out = f"{buf_name} =  b\"\"\n"
+    out += _transform_common(data, prefix=f"{buf_name} += b\"")
     return out
 
-def _transform_into_c(data: bytes) -> str:
-    out = "const unsigned char buf[] =\n"
+def _transform_into_c(data: bytes, buf_name: str = "buf") -> str:
+    out = f"const unsigned char {buf_name}[] =\n"
     out += _transform_common(data, prefix="\"")
     return out + ";"
 
@@ -133,10 +133,10 @@ def _xor_handler(mode: str, extras: list[str], buf: bytes) -> EncResult:
         raise ValueError(f"Incorrect mode provided, must be one of {', '.join(XOR_MODES)}")
 
     def extend_repeat(data: bytes, target_len: int) -> bytes:
-        # Repeat + slice
-        return (data * ((target_len + len(data) - 1) // len(data)))[:target_len]
+        return (data * ((target_len + len(data) - 1) // len(data)))[:target_len] # ceil
 
     key_og = os.urandom(int(mode) // 8)
+    print(f"key len = {len(key_og)}")
     key = extend_repeat(key_og, len(buf))
     ct = bytes([a ^ b for a, b in zip(buf, key)])
 
@@ -160,7 +160,7 @@ def entrypoint(data: bytes, op: str, mode: str, extras: list[str], format: str) 
         raise ValueError(f"Invalid op '{op}' for encryption")
     
     try:
-        transform_func = cast(Callable[[bytes], str], _TRANSFORMS[format.lower()])
+        transform_func = cast(Callable[[bytes, str], str], _TRANSFORMS[format.lower()])
     except KeyError:
         raise ValueError(f"Invalid output format '{format}' for mode obfuscation")
     
@@ -168,9 +168,14 @@ def entrypoint(data: bytes, op: str, mode: str, extras: list[str], format: str) 
     key = "".join(f"\\x{byte:02x}" for byte in enc_result.key)
     nonce_or_iv = "".join(f"\\x{byte:02x}" for byte in enc_result.nonce_or_iv) if enc_result.nonce_or_iv else "none used"
     
-    transformed_data = transform_func(enc_result.ciphertext)
+    out_data = transform_func(enc_result.ciphertext, "buf")
+    out_key = transform_func(enc_result.key, "key")
+    out_nonce_or_iv = transform_func(enc_result.nonce_or_iv, "nonce_or_iv") if enc_result.nonce_or_iv else None
 
     LOGGER.info("Encrypted with: key = %s, nonce/iv = %s", key, nonce_or_iv)
-    LOGGER.info("Payload size: before = %d bytes, after = %d bytes", len(data), len(transformed_data.encode()))
+    LOGGER.info("Encrypted with:")
+    print(out_key)
+    if out_nonce_or_iv: print(out_nonce_or_iv)
+    LOGGER.info("Payload size: before = %d bytes, after = %d bytes", len(data), len(out_data.encode()))
 
-    return transformed_data
+    return out_data

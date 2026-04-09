@@ -1,5 +1,4 @@
 #include <Windows.h>
-#include <ntstatus.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -157,7 +156,7 @@ static int RunPayload(
 			status = fn.fn4((PCSTR)*pReadPtr, fn.boolParam, &Terminator, pWritePtr);
 		}
 
-		if (status != STATUS_SUCCESS) {
+		if (status != ERROR_SUCCESS) {
 			printf("[-] Something went wrong with %s while deobfuscating: %d\n", *pReadPtr, status);
 			return -1;
 		}

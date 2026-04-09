@@ -1,12 +1,11 @@
 #include <Windows.h>
-#include <ntstatus.h>
 
 #include "obfuscation/ip2byte.h"
 
 
 // =======  IPv6  ========================================================== //
 
-static NTSTATUS ParseIpv6Component(
+static DWORD ParseIpv6Component(
 	IN PCSTR S,
 	OUT PCSTR *Terminator,
 	OUT PINT segment
@@ -22,7 +21,7 @@ static NTSTATUS ParseIpv6Component(
 			if (digits == 0) goto error;
 			*segment = s;
 			*Terminator = S;
-			return STATUS_SUCCESS;
+			return ERROR_SUCCESS;
 		}
 
 		if (c >= '0' && c <= '9')
@@ -44,11 +43,11 @@ static NTSTATUS ParseIpv6Component(
 
 error:
 	if (Terminator) *Terminator = S;
-	return STATUS_INVALID_PARAMETER;
+	return ERROR_INVALID_PARAMETER;
 }
 
 // IPv4-embedded IPv6 not supported yet
-NTSTATUS Ipv6StringToAddress(
+DWORD Ipv6StringToAddress(
 	IN PCSTR S,
 	OUT PCSTR *Terminator,
 	OUT PBYTE Addr // 16 bytes
@@ -125,17 +124,17 @@ NTSTATUS Ipv6StringToAddress(
 		return err;
 	}
 
-	return STATUS_SUCCESS;
+	return ERROR_SUCCESS;
 
 error:
 	if (Terminator) *Terminator = S;
-	return STATUS_INVALID_PARAMETER;
+	return ERROR_INVALID_PARAMETER;
 }
 
 
 // =======  IPv4  ========================================================== //
 
-NTSTATUS Ipv4StringToAddress(
+DWORD Ipv4StringToAddress(
 	IN PCSTR S,
 	IN BOOLEAN Strict,
 	OUT PCSTR *Terminator,
@@ -143,7 +142,7 @@ NTSTATUS Ipv4StringToAddress(
 ) {
 	if (Strict == FALSE) {
 		printf("[-] Error converting IPv4 string to binary address: Strict=FALSE is not supported");
-		return STATUS_NOT_SUPPORTED;
+		return ERROR_UNSUPPORTED_TYPE;
 	}
 
 	int nBytes = 0;
@@ -151,14 +150,14 @@ NTSTATUS Ipv4StringToAddress(
 	while (1) {
 		char c = *S;
 		if (c == '.' || c == '\0') {
-			if (nBytes > 3) return STATUS_INVALID_PARAMETER;
+			if (nBytes > 3) return ERROR_INVALID_PARAMETER;
 
 			Addr[nBytes++] = (unsigned char)segment;
 			segment = 0;
 
 			if (c == '\0') {
 				// An IP must have exactly 4 segments
-				if (nBytes != 4) return STATUS_INVALID_PARAMETER;
+				if (nBytes != 4) return ERROR_INVALID_PARAMETER;
 				break;
 			}
 
@@ -166,14 +165,14 @@ NTSTATUS Ipv4StringToAddress(
 			continue;
 		}
 
-		if (c < '0' || c > '9') return STATUS_INVALID_PARAMETER;
+		if (c < '0' || c > '9') return ERROR_INVALID_PARAMETER;
 
 		// Shift and convert to int
 		segment = (segment * 10) + (c - '0');
-		if (segment > 255) return STATUS_INVALID_PARAMETER;
+		if (segment > 255) return ERROR_INVALID_PARAMETER;
 		S++;
 	}
 
 	*Terminator = S;
-	return STATUS_SUCCESS;
+	return ERROR_SUCCESS;
 }

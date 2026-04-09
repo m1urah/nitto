@@ -12,7 +12,7 @@
 DWORD UUIDFromString(
 	IN PCSTR S,
 	IN BOOL IsGUID,
-	OUT PCSTR* Terminator,
+	OUT PCSTR *Terminator,
 	OUT PBYTE Addr // 16 bytes
 ) {
 	for (int i = 0; i < 16; i++) {

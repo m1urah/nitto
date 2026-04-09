@@ -11,7 +11,7 @@
 
 DWORD EthernetStringToAddress(
 	IN PCSTR S,
-	OUT PCSTR* Terminator,
+	OUT PCSTR *Terminator,
 	OUT PBYTE Addr // 6 bytes
 ) {
 	for (int i = 0; i < 6; i++) {

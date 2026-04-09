@@ -15,6 +15,8 @@ The cool thing about this technique is that it makes it harder for LLM-assisted 
 
 See the [Email-based obfuscation](#email-based-obfuscation) section for more info.
 
+![Nitto logo](images/logo/nitto-logo.svg)
+
 ## Table of Contents
 
 - [Remarks](#remarks)
@@ -80,6 +82,8 @@ which will use AES with the following default values:
 - GCM as the mode of operation
 - 256 as the key size
 
+They key and nonce will be printed to stdout.
+
 Use `nitto -l ops` or `nitto -l modes` to see the defaults.
 
 For **obfuscation**:
@@ -115,7 +119,7 @@ The repo is structured as follows:
 ├── licenses/           # Boring stuff
 ├── nitto.*             # Visual Studio stuff
 ├── LICENSE
-├── Makefile            # Build script for C module
+├── Makefile            # Build script for C module (doesn't exist yet)
 └── README.md           # This file ;)
 ```
 
@@ -168,6 +172,8 @@ If you want to run the C code demonstration as well, you have two options:
 
 1. Use Visual Studio
 2. Compile it using the `Makefile` and run it
+
+> **NOTE**. I haven't created the Makefile yet. Will update this once that happens.
 
 For the latter, you need to install:
 
@@ -433,6 +439,8 @@ A set of symbols is used to indicate status:
 
 All the stuff that I want to implement in the near future:
 
+- [ ] Create Makefile
+- [ ] Create pipeline to release versioned EXEs
 - [ ] Implement EmailFuscation byte-to-alphanumeric conversion
 - [ ] "Encryption first, then obfuscation" mode for the same payload
 - [ ] Use multiple obfuscations at once for the same payload, to generate a real-like dictionary (or list) of data
@@ -440,4 +448,4 @@ All the stuff that I want to implement in the near future:
 
 ## License
 
-All the contents of this repo, except the ones that I didn't write, are licensed under the MIT License. See the `LICENSE` file for details.
+MIT License (see `LICENSE`) — do what you want with it, just don't blame me.

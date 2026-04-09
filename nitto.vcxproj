@@ -133,6 +133,7 @@
   <ItemGroup>
     <ClCompile Include="src\encryption\micro_aes.c" />
     <ClCompile Include="src\encryption\rc4.c" />
+    <ClCompile Include="src\encryption\xor.c" />
     <ClCompile Include="src\main.c" />
     <ClCompile Include="src\obfuscation\common.c" />
     <ClCompile Include="src\obfuscation\email2byte.c" />
@@ -144,6 +145,7 @@
     <ClInclude Include="include\encryption\ChaCha20.h" />
     <ClInclude Include="include\encryption\micro_aes.h" />
     <ClInclude Include="include\encryption\rc4.h" />
+    <ClInclude Include="include\encryption\xor.h" />
     <ClInclude Include="include\hashTables\firstNames.h" />
     <ClInclude Include="include\hashTables\lastNames.h" />
     <ClInclude Include="include\hashTables\others.h" />

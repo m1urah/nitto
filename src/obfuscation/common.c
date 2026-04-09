@@ -3,9 +3,9 @@
 #include "obfuscation/common.h"
 
 DWORD GetByteFromString(
-	IN unsigned char* S,
+	IN unsigned char *S,
 	IN BOOL CaseSensitive,
-	OUT unsigned char** Terminator,
+	OUT unsigned char **Terminator,
 	OUT PBYTE Byte
 ) {
 	unsigned char pair[2] = { 0 };

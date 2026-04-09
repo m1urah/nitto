@@ -19,7 +19,7 @@ Params:
 	segment:	 A pointer to a 16-byte buffer containing the binary
 				 representation of the IPv6 address
 */
-NTSTATUS Ipv6StringToAddress(IN PCSTR S, OUT PCSTR *Terminator, OUT PBYTE Addr);
+DWORD Ipv6StringToAddress(IN PCSTR S, OUT PCSTR *Terminator, OUT PBYTE Addr);
 
 /*
 Custom implementation of the RtlIpv4StringToAddressA function. Converts an
@@ -34,7 +34,7 @@ Params:
 	segment:	 A pointer to a 16-byte buffer containing the binary
 				 representation of the IPv4 address
 */
-NTSTATUS Ipv4StringToAddress(IN PCSTR S, IN BOOLEAN Strict, OUT PCSTR *Terminator, OUT PBYTE Addr);
+DWORD Ipv4StringToAddress(IN PCSTR S, IN BOOLEAN Strict, OUT PCSTR *Terminator, OUT PBYTE Addr);
 
 
 #endif // IP2BYTE_H
