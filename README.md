@@ -1,4 +1,12 @@
-# Nitto
+<div align="center">
+  <h1>Nito</h1>
+  
+  <p><strong>why make something complicated when KISS do the trick</strong></p>
+
+  <img src="images/logo/nitto-logo_no-bg_no-border.svg" height="100" alt="Nitto logo" />
+</div>
+
+<br>
 
 A simple tool to evade signature-based AV detection **in Windows** by applying encryption or obfuscation to your payloads.
 
@@ -14,8 +22,6 @@ Nitto implements a **novel\* obfuscation technique** that I created myself: **em
 The cool thing about this technique is that it makes it harder for LLM-assisted deoubfuscation tools at first glance. That said, if they extract the lookup tables from the PE (they must be bundled in there), they can eventually reverse it **with enough** context (of course). But honestly, that applies to all other techniques too.
 
 See the [Email-based obfuscation](#email-based-obfuscation) section for more info.
-
-![Nitto logo](images/logo/nitto-logo.svg)
 
 ## Table of Contents
 
@@ -52,9 +58,9 @@ See the [Email-based obfuscation](#email-based-obfuscation) section for more inf
 
 - It goes without saying, but this tool is meant for legimitate security research and educational purposes only, not for malicous plans or activies.
 
-- For the sake of simplicity, it is often assumed that the input parameters of the functions are well-defined, and that the user knows what they're doing. As a result, some specific error checks have been ommited. However, this doesn't mean that appropiate checks haven't been included where necessary, they have. If you intend to use my code in a live environment make sure to double check it, specially when dealing with memory allocations and [POINTERS](./images/lovely_pointers.png)!!
+- For the sake of simplicity, it is often assumed that the input parameters of the functions are well-defined, and that the user knows what they're doing. As a result, some specific error checks have been ommited. However, this doesn't mean that appropiate checks haven't been included where necessary, they have. If you intend to use my code in a live environment make sure to double check it, especially when dealing with memory allocations and [POINTERS](./images/lovely_pointers.png)!!
 
-- The bundled C encryption libraries include custom implementations of the cipher algorithms used in the Python module, written by very capable devs. Eventhough they claim it's RFC-whatever compliant, and not that I don't trust them (≖_≖), be aware that most security professionals strongly advise against using custom ciphers implementations, AND FOR GOOD REASON! Use it for learning, experimenting, or even for your own payloads, but not for classified plans to invade Mars... although, I'd be interested to get to know more about that.
+- The bundled C encryption libraries include custom implementations of the cipher algorithms used in the Python module, written by very capable devs. even though they claim it's RFC-whatever compliant, and not that I don't trust them (≖_≖), be aware that most security professionals strongly advise against using custom ciphers implementations, AND FOR GOOD REASON! Use it for learning, experimenting, or even for your own payloads, but not for classified plans to invade Mars... although, I'd be interested to get to know more about that.
 
 - If you like what you see, I have a blog! Check it out at [allthingsmalware.com](https://allthingsmalware.com)
 
@@ -138,7 +144,7 @@ Lives under two dirs:
 
 and it's structured into:
 
-- The `main.c` file: contains a sample implementation of the 4 main obfuscation tecniques
+- The `main.c` file: contains a sample implementation of the 4 main obfuscation techniquess
 - `encryption/`: AES, ChaCha20, RC4, and XOR implementations
 - `obfuscation/`: deobfuscates IP, MAC, UUID/GUID, or email lists into its binary representation
 
@@ -275,15 +281,15 @@ Nitto implements 4 types of obfuscation techniques that convert the raw bytes in
 
 The IPfuscation technique and its variants (MAC and UUID) are not new, they have been around since early 2021. What's interesting about these techniques is the use of Windows System DLLs (like `Rpcrt4.dll` or `Ntdll.dll`) functions to reconstruct the shellcode:
 
-- `RtlIpv4AddressToStringA`
-- `RtlIpv6AddressToStringA`
+- `RtlIpv4StringToAddressA`
+- `RtlIpv6StringToAddressA`
 - `UuidFromStringA`
 
-However, most modern EDRs now monitor for high volumes of these "string-to-binary" API calls, specially when followed by memory allocation functions like `VirtualAllow` or `WriteProcessMemory`. Hence the need to implement custom code that can perform that same translation. See the [Custom C Deobfuscation](#custom-c-deobfuscation) section.
+However, most modern EDRs now monitor for high volumes of these "string-to-binary" API calls, especially when followed by memory allocation functions like `VirtualAlloc` or `WriteProcessMemory`. Hence the need to implement custom code that can perform that same translation. See the [Custom C Deobfuscation](#custom-c-deobfuscation) section.
 
 ### Email-based Obfuscation
 
-This is a new technique that I've developed. While other obfuscation techniques converts each byte to their decimal (IPv4) or hexadecimal (IPv6, MAC, and UUID) representation, this doesn't apply to emails. Email addresses valid characters are limited to alphanumeric (a-z, 0-9), periods (not at the stard/end or consecutively), underscores, hyphens, and plus signs. Eventhough spaces and other special characters (`(),:;<>@[\\]`) are considered valid per [the correspending RFC rules](https://en.wikipedia.org/wiki/Email_address#Local-part), they are **generally discouraged** or even disallowed. Such restrictions prevent us from doing a direct byte-to-ascii conversion.
+This is a new technique that I've developed. While other obfuscation techniques converts each byte to their decimal (IPv4) or hexadecimal (IPv6, MAC, and UUID) representation, this doesn't apply to emails. Email addresses valid characters are limited to alphanumeric (a-z, 0-9), periods (not at the stard/end or consecutively), underscores, hyphens, and plus signs. Even though spaces and other special characters (`(),:;<>@[\\]`) are considered valid per [the correspending RFC rules](https://en.wikipedia.org/wiki/Email_address#Local-part), they are **generally discouraged** or even disallowed. Such restrictions prevent us from doing a direct byte-to-ascii conversion.
 
 Let's say we have the following bytes sequence: `\xfc\x48\x83\xe4\xf0\xe8\xc0\x00\x00\x00\x41\x51\x41\x50`, which refers to the *standard* bootstrap header for x64 Windows shellcode that aligns the stack and prepares the CPU for further instructions. Many of these bytes represent non-printable controls or non alphanumeric characters: `\xfc`=`ü`, `\xc0`=`À`, `\x83`=(Non-printable/Extended ASCII), `\x00`=(Null control character), etc. Meaning they **can't be converted** into ASCII characters **without losing information**.
 
